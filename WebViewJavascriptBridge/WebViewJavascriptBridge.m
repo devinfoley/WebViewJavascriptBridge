@@ -75,7 +75,7 @@ static NSString *QUEUE_HAS_MESSAGE = @"__WVJB_QUEUE_MESSAGE__";
     
     if (responseCallback) {
         NSString* callbackId = [NSString stringWithFormat:@"objc_cb_%d", ++_uniqueId];
-        [self.responseCallbacks setObject:responseCallback forKey:callbackId];
+        [self.responseCallbacks setObject:[responseCallback copy] forKey:callbackId]; // Do we need to balance [responseCallback copy]?
         [message setObject:callbackId forKey:@"callbackId"];
     }
 
@@ -109,13 +109,15 @@ static NSString *QUEUE_HAS_MESSAGE = @"__WVJB_QUEUE_MESSAGE__";
     NSArray* messages = [messageQueueString componentsSeparatedByString:MESSAGE_SEPARATOR];
     for (NSString *messageJSON in messages) {
         NSDictionary* message = [self _deserializeMessageJSON:messageJSON];
-        WVJBResponseCallback responseCallback = NULL;
+        __block WVJBResponseCallback responseCallback = NULL;
         if ([message objectForKey:@"callbackId"]) {
             __block NSString* responseId = [message objectForKey:@"callbackId"];
-            responseCallback = ^(NSDictionary* data) {
+            responseCallback = [^(NSDictionary* data) {
                 NSDictionary* responseMessage = [NSDictionary dictionaryWithObjectsAndKeys: responseId, @"responseId", data, @"data", nil];
                 [self _queueMessage:responseMessage];
-            };
+                responseCallback = nil;
+                responseId = nil;
+            } copy];
         }
         
         WVJBHandler handler = self.messageHandler;
