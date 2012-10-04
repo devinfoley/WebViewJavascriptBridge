@@ -43,6 +43,7 @@ static NSString *CALLBACK_ARGUMENTS_KEY = @"wvjb_arguments";
 
 - (void)dealloc {
     _delegate = nil;
+    [super dealloc];
 }
 
 - (void)sendMessage:(NSString *)message toWebView:(UIWebView *)webView {
